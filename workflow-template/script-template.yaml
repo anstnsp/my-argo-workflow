@@ -1,0 +1,17 @@
+# 컨테이너에서 사용할 스크립트를 직접 Manifest 안에 정의한다는 점에서 Container Template과는 큰 차이가 있다. 
+#다음은 간단한 script template 예제로, source 필드 안에 정의한 Python 스크립트를 컨테이너 안에서 실행한다. 
+#따로 Image를 생성하지 않고도, 간단한 스크립트를 추가할 수 있다는 점에서 꽤 유용하다.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-script-template-
+spec:
+  entrypoint: script-template
+  templates:
+  - name: script-template
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        print("The script template was executed successfully.")

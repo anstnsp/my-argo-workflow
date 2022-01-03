@@ -1,0 +1,64 @@
+# 'task-output' 템플릿은 node.js로 작성된 스크립트로 stdout에 "Print Result"라는 메시지를 출력한다. 
+# dag-template의 task3은 task-output을 단순히 호출하는 task이며, 
+# task4는 task3의 출력을 "{{tasks.task3.outputs.result}}"라는 이름으로 가져와서 task-template에 input parameter로 전달한다. 
+# {{tasks.<task명>.outputs.result}} 는 Argo Workflows에서 미리 reserve되어있는 변수명으로 해당 task의 표준출력 메시지를 output parameter로 지정한다. 
+# task4는 input parameter 'text'를 그대로 출력한다.
+
+ 
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-script-result
+spec:
+  entrypoint: dag-template
+  arguments:
+    parameters:
+    - name: message1
+      value: Task 1 is executed
+    - name: message2
+      value: Task2 is executed
+  templates:
+  - name: dag-template
+    inputs:
+      parameters:
+      - name: message1
+      - name: message2
+    dag:
+      tasks:
+      - name: task1
+        arguments:
+          parameters: [{name: text, value: "{{inputs.parameters.message1}}"}]
+        template: task-template
+      - name: task2
+        arguments:
+          parameters: [{name: text, value: "{{inputs.parameters.message2}}"}]
+        template: task-template
+        dependencies: [task1]
+      - name: task3
+        template: task-output
+        dependencies: [task1]
+      - name: task4
+        arguments:
+          parameters: [{name: text, value: "{{tasks.task3.outputs.result}}"}]
+        template: task-template
+        dependencies: [task2, task3]
+
+  - name: task-template
+    inputs:
+      parameters:
+      - name: text
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        param = "{{inputs.parameters.text}}"
+        print(param)
+  
+  - name: task-output
+    script:
+      image: node:9.1-alpine
+      command: [node]
+      source: |
+        var out = "Print result";
+        console.log(out);

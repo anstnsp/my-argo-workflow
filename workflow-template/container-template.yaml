@@ -1,0 +1,17 @@
+#Container Template은 Pod spec에서 container를 정의하는 것과 동일하다. 
+#container 생성시 사용할 image, 그리고 command 또는 args 필드를 설정한다. 
+#다음은 container template을 사용한 workflow이며, 'hello-world' 예제와 구성이 크게 다르지 않다. 대부분의 경우, 많이 사용하는 방식이다.
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-  # Name of this Workflow
+spec:
+  entrypoint: whalesay        # Defines "whalesay" as the "main" template
+  templates:
+  - name: whalesay            # Defining the "whalesay" template
+    container:
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["hello world"]   # This template runs "cowsay" in the "whalesay" image with arguments "hello world"

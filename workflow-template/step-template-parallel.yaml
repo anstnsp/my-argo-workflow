@@ -1,0 +1,27 @@
+# steps 필드 안에서 동일 레벨에 '-'가 존재할 경우, 병렬 실행된다. 
+# 아래 workflow를 생성할 경우, step2와 step3가 동시에 실행되는 것을 확인할 수 있다.
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-steps-templates-parallel
+spec:
+  entrypoint: steps-template-parallel
+  templates:
+  - name: steps-template-parallel
+    steps:
+    - - name: step1
+        template: task-template
+    - - name: step2
+        template: task-template
+      - name: step3
+        template: task-template
+    - - name: step4
+        template: task-template
+  - name: task-template
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        print("Task executed.")

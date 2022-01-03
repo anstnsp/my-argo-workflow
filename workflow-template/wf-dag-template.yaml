@@ -1,0 +1,34 @@
+# steps template과는 달리, 명시적으로 순서를 정의하지 않는 대신 template 호출 단위인 'task' 간의 의존성(dependencies)을 기술함으로써, 자동으로 실행 순서가 결정된다. 
+# 의존성이 존재하지 않는 task의 경우, 대기없이 바로 실행된다. 
+# 다음은 DAG를 사용한 간단한 Workflow 예시이다. 
+# task1은 아무런 의존성이 없으므로 바로 실행되며, task2, task3는 모두 task1에 의존성이 있으므로 task1 완료 이후 실행되며, task4는 task2와 task3가 모두 끝난 뒤에 실행된다.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-dag-templates
+spec:
+  entrypoint: dag-template
+  
+  templates:
+  - name: dag-template
+    dag:
+      tasks:
+      - name: task1
+        template: task-template
+      - name: task2
+        template: task-template
+        dependencies: [task1]
+      - name: task3
+        template: task-template
+        dependencies: [task1]
+      - name: task4
+        template: task-template
+        dependencies: [task2, task3]
+
+  - name: task-template
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        print("Task executed.")

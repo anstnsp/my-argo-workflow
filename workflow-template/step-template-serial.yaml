@@ -1,0 +1,29 @@
+# steps 필드 내 정의 순서에 따라 어떤 step이 먼저 실행될지 결정되며, 
+# 아래 Manifest의 경우 step1 -> step2 -> step3 순으로 실행된다. 
+# 후순위의 step은 앞서 실행중인 step이 성공하기 전엔 실행되지 않는다. 
+# 실제 작업을 수행할 template인 'task-template은 script template으로 정의하였으며, 
+# 각 step에 의해 호출되는 것을 알 수 있다.
+
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-steps-templates-serial
+spec:
+  entrypoint: steps-template-serial
+  templates:
+  - name: steps-template-serial
+    steps:
+    - - name: step1
+        template: task-template
+    - - name: step2
+        template: task-template
+    - - name: step3
+        template: task-template
+  - name: task-template
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        print("Task executed.")

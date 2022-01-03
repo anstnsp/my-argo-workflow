@@ -1,0 +1,53 @@
+# 스크립트 기반 코드 베이스의 작업의 경우, 원하는 환경의 컨테이너를 지정하여 작업 가능
+# stdout의 결과를 다음 task에서 참조하여 실행 가능
+# "{{steps.generate.outputs.result}}"
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: scripts-bash-
+spec:
+  entrypoint: bash-script-example
+  templates:
+  - name: bash-script-example
+    steps:
+    - - name: generate
+        template: gen-random-int-javascript
+    - - name: print
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate.outputs.result}}"  #전 테스크의 결과를 steps.[name].outputs.result로 받아옴. 
+
+  - name: gen-random-int-bash
+    script:
+      image: debian:9.4
+      command: [bash]
+      source: |                                         # Contents of the here-script
+        cat /dev/urandom | od -N2 -An -i | awk -v f=1 -v r=100 '{printf "%i\n", f + r * $1 / 65536}'
+
+  - name: gen-random-int-python
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import random
+        i = random.randint(1, 100)
+        print(i)
+
+  - name: gen-random-int-javascript
+    script:
+      image: node:9.1-alpine
+      command: [node]
+      source: |
+        var rand = Math.floor(Math.random() * 100);
+        console.log(rand);
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+    container:
+      image: alpine:latest
+      command: [sh, -c]
+      args: ["echo result was: {{inputs.parameters.message}}"]

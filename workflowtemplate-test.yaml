@@ -1,0 +1,26 @@
+#workflowtemplate을 사용하면 템플릿을 생성하고 workflow생성 시 이를 참조하여 사용하는 형태 
+
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-world-template
+spec:
+  # invoke the whalesay template with
+  # "hello world" as the argument
+  # to the message parameter
+  entrypoint: whalesay
+  arguments:
+    parameters:
+    - name: message
+      value: hello world
+
+  templates:
+  - name: whalesay
+    inputs:
+      parameters:
+      - name: message       # parameter declaration
+    container:
+      # run cowsay with that message input parameter as args
+      image: docker/whalesay
+      command: [cowsay]
+      args: ["{{inputs.parameters.message}}"]

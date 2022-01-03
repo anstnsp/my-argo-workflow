@@ -1,0 +1,58 @@
+# 실제 서비스 운영시, DB 연결시 Timeout 등의 문제로 프로세스를 재시작해야 하는 경우가 발생할 수 있다. 
+# Argo Workflows에서도 Task에서 에러 발생시, task를 다시 생성하여 재시도하는 기능을 제공한다. 
+# 다음은 일부러 Python 스크립트 에러를 발생시켜 지정된 횟수만큼 retry를 하는 워크플로우 예시이다.
+
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: wf-retrystrategy-
+spec:
+  entrypoint: dag-template
+  arguments:
+    parameters:
+    - name: messageA
+      value: A
+
+  templates:
+  - name: dag-template
+    inputs:
+      parameters:
+      - name: messageA
+
+    dag:
+      tasks:
+      - name: Task1
+        arguments:
+          parameters: [{name: text, value: "{{inputs.parameters.messageA}}" }]
+        template: task-decision
+      - name: TaskA
+        template: task-A
+        depends: Task1.Succeeded
+        when: "{{tasks.Task1.outputs.result}} == A"
+
+      
+  - name: task-decision
+    inputs:
+      parameters:
+      - name: text
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        p = "{{inputs.parameters.text}}"
+        print(p)
+
+  - name: task-A
+    retryStrategy:
+      limit: 5 #재시도 최대횟수 
+      retryPolicy: "Always" #실패, 에러 또는 모든 경우에 대해 retry를 수행할지 선택하며, "Always"/"OnFailure"/"OnError"/"OnTrasientError" 옵션이 존재(string)
+      backoff:
+        duration: "1"  #최초 retry 전까지 대기하는 시간, 기본은 초 단위이지만 2m, 4h 등으로 분, 시, 일 변경 가능(string)
+        factor: 2 # Backoff 발생시, 증가하는 duration의 배수를 의미하며 duration=1,factor=2인 경우, 1->2->4->8->... 와 같이 늘어남(number)
+        maxDuration: 1m  #Backoff로 대기할 수 있는 최대 시간(string), limit이 아무리 커도 대기시간이 maxDuration을 초과하면 workflow는 종료됨
+    script:
+      image: python:3.8-slim
+      command: [python]
+      source: |
+        print("Task A was executed.)
